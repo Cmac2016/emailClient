@@ -1,0 +1,140 @@
+
+
+
+#SYMBOL_NAME "SendMail_Simpl#_v1"
+
+#IncludePath "C:\userSimpl#"
+#USER_SIMPLSHARP_LIBRARY "MailServer"
+
+#HELP_BEGIN
+
+The module has preconfigred email servers or you can specify your own that is not in the list.
+
+
+
+Custom_Mail_Server:
+	*Optional Custom Main Server
+Custom_Mail_Server_Port:
+	*Optional custom mail server port
+
+User_Name: Your email user name
+Password: your account password
+From: A friendly name. Example : Home Processor
+
+#_Of_Attachments:
+	Optional. Specifies the number of attachments to be sent.  Zero (0) specifies
+	that there are no attachments.
+        
+Attachment_Path$:
+	Optional. An empty string indicates that no attachments are to be sent. Specifies
+	the files to be attached. Multiple filenames may be specified, delimited
+	by ';'. Max field length is 65534.
+
+Send:(mandatory fields)
+Sends the message via the chosen client.
+
+ReceiverAddress : who you are sending to
+Subject: Subject.   Example: Front Door Activity
+Message: Messsage to send. Example:   There is someone at the front door
+
+
+
+                
+
+
+#HELP_END
+
+
+string_parameter Mail_Server[100];
+string_parameter Custom_Mail_Server[50];
+integer_parameter Custom_Mail_Server_Port;
+string_parameter User_Name[50];
+string_parameter Password[50];
+string_parameter From[50];
+
+Digital_Input _Skip_,_Skip_,_Skip_,_Skip_,_Skip_,_Skip_,Send;
+String_Input RecieverAddress[50];
+String_input Subject[100];
+String_input Message[500];
+String_input _Skip_,_Skip_,Attachment_Path$[5000];
+analog_input #_Of_Attachments;
+Digital_Output _Skip_,_Skip_,_Skip_,_Skip_,_Skip_,_Skip_,MailSent,MailSendError;
+String_Output _Skip_,SendResult$;
+ 
+
+SimpleMailServer mail;
+
+string at[5500];
+
+
+#BEGIN_PARAMETER_PROPERTIES Mail_Server
+     propValidUnits = unitString;
+     propList = { "1" , "Hotmail" } , { "2" , "Gmail" } , { "3" , "Yahoo" }, { "4" , "Custom" } ;
+#END_PARAMETER_PROPERTIES
+
+
+Push Send
+{
+    
+    mail.Reciever = RecieverAddress;
+	mail.Message = Message;
+    mail.Subject = Subject;
+    mail.Attachment = Attachment_Path$;
+    mail.Number_Of_Attachments = #_Of_Attachments;
+
+    mail.Send();
+    
+}
+
+
+Callback function ReturnMail(string msg)
+{
+   SendResult$ = msg;
+   if (msg = "SMTP_OK")
+		{Pulse (200,MailSent);}
+   else
+		{
+         Pulse (200,MailSendError);
+        }
+
+}
+
+
+
+Function Main()
+{
+    	waitforinitializationcomplete();
+
+        registerdelegate (mail, SendStatus, ReturnMail);
+
+
+			if(Mail_Server = "1")
+				{
+                  mail.Server = "smtp.live.com";
+                  mail.Port = 587;
+                }
+            if(Mail_Server = "2")
+				{
+                  mail.Server = "smtp.gmail.com";
+                  mail.Port = 465;
+                }
+			 if(Mail_Server = "3")
+				{
+                  mail.Server = "smtp.mail.yahoo.com";
+                  mail.Port = 465;
+                }
+              if(Mail_Server = "4")
+				{
+                  mail.Server = Custom_Mail_Server;
+                  mail.Port = Custom_Mail_Server_Port;
+                }
+    
+                  mail.UserName = User_Name;
+		          mail.Password = Password;
+		          mail.From = From;
+
+
+
+           
+
+}
